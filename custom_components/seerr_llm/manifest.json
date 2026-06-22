@@ -1,0 +1,13 @@
+{
+  "domain": "seerr_llm",
+  "name": "Seerr LLM Tools",
+  "codeowners": ["@zackhow"],
+  "config_flow": true,
+  "dependencies": ["intent"],
+  "documentation": "https://github.com/billy/seerr_llm_tools",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "0.2.0"
+}

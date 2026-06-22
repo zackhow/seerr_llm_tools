@@ -1,0 +1,45 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Seerr LLM Tools",
+        "description": "Configure your TMDB and Seerr API credentials to enable media search and request tools.",
+        "data": {
+          "tmdb_api_key": "TMDB API Key",
+          "seerr_url": "Seerr URL",
+          "seerr_api_key": "Seerr API Key"
+        },
+        "data_description": {
+          "tmdb_api_key": "Your TMDB API key (https://www.themoviedb.org/settings/api)",
+          "seerr_url": "URL of your Seerr instance (e.g. http://localhost:5055)",
+          "seerr_api_key": "Your Seerr API key (found in Seerr settings)"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Seerr LLM Tools",
+        "description": "Update your TMDB and Seerr API credentials.",
+        "data": {
+          "tmdb_api_key": "TMDB API Key",
+          "seerr_url": "Seerr URL",
+          "seerr_api_key": "Seerr API Key"
+        },
+        "data_description": {
+          "tmdb_api_key": "Your TMDB API key (https://www.themoviedb.org/settings/api)",
+          "seerr_url": "URL of your Seerr instance (e.g. http://localhost:5055)",
+          "seerr_api_key": "Your Seerr API key (found in Seerr settings)"
+        }
+      }
+    },
+    "error": {
+      "invalid_tmdb_key": "Invalid TMDB API key. Please check your key at https://www.themoviedb.org/settings/api.",
+      "tmdb_unavailable": "Unable to reach TMDB API. Please check your network connection.",
+      "invalid_seerr_key": "Invalid Seerr API key. Please check your key in Seerr settings.",
+      "seerr_unavailable": "Unable to reach Seerr instance. Please check the URL and that Seerr is running.",
+      "cannot_connect": "Unable to connect. Please check your network connection and try again.",
+      "unknown": "An unexpected error occurred. Please check the logs."
+    },
+    "abort": {
+      "already_configured": "This integration is already configured."
+    }
+  }
+}

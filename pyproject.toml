@@ -1,0 +1,41 @@
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+
+[tool.ruff]
+target-version = "py314"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "ANN101",  # missing-type-self
+    "ANN102",  # missing-type-cls
+    "EM101",   # exception must not use a string literal
+    "EM102",   # exception must not use an f-string
+    "S104",    # possible binding to all interfaces
+    "PLR0913", # too many arguments
+    "RUF012",  # mutable class var
+    "ANN001",  # missing type annotation function argument
+    "ARG001",  # unused function argument
+    "ARG002",  # unused method argument
+    "D102",    # missing docstring in public method
+    "D107",    # missing docstring in __init__
+    "F401",    # unused imports
+    "PLR2004", # magic value comparison
+    "TRY003",  # long message outside exception
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*" = [
+    "S101",    # use of assert
+    "ANN002",  # missing type annotation for *args
+    "ANN003",  # missing type annotation for **kwargs
+    "PT012",   # pytest.raises block
+    "TC002",   # type checking imports
+    "D104",    # missing docstring in package
+    "PLC0415", # import should be at top level
+]
