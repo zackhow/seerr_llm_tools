@@ -12,21 +12,18 @@ line-length = 120
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-    "ANN101",  # missing-type-self
-    "ANN102",  # missing-type-cls
     "EM101",   # exception must not use a string literal
     "EM102",   # exception must not use an f-string
     "S104",    # possible binding to all interfaces
     "PLR0913", # too many arguments
-    "RUF012",  # mutable class var
-    "ANN001",  # missing type annotation function argument
     "ARG001",  # unused function argument
     "ARG002",  # unused method argument
     "D102",    # missing docstring in public method
     "D107",    # missing docstring in __init__
-    "F401",    # unused imports
     "PLR2004", # magic value comparison
     "TRY003",  # long message outside exception
+    "D203",    # incompatible with D211
+    "D212",    # incompatible with D213
 ]
 
 [tool.ruff.lint.per-file-ignores]

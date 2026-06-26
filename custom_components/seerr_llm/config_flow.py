@@ -1,9 +1,12 @@
 """Config flow for Seerr LLM Tools integration."""
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
+
+if TYPE_CHECKING:
+    import aiohttp
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_BASE
 from homeassistant.helpers import aiohttp_client
@@ -35,7 +38,7 @@ STEP_USER_DATA_SCHEMA: vol.Schema = vol.Schema(
 )
 
 
-async def _validate_tmdb_api_key(session, api_key: str) -> None:
+async def _validate_tmdb_api_key(session: aiohttp.ClientSession, api_key: str) -> None:
     """Validate TMDB API key by making a test request."""
     import aiohttp  # noqa: PLC0415
 
@@ -51,7 +54,7 @@ async def _validate_tmdb_api_key(session, api_key: str) -> None:
 
 
 async def _validate_seerr_connection(
-    session,
+    session: aiohttp.ClientSession,
     seerr_url: str,
     seerr_api_key: str,
 ) -> None:

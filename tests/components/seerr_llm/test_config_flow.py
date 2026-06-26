@@ -15,8 +15,6 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import (
 )
 
 from custom_components.seerr_llm.const import (
-    CONF_SEERR_API_KEY,
-    CONF_SEERR_URL,
     CONF_TMDB_API_KEY,
     DOMAIN,
     TMDB_BASE_URL,

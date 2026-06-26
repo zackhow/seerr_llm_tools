@@ -12,9 +12,11 @@ from .const import (
     CONF_SEERR_API_KEY,
     CONF_SEERR_URL,
     CONF_TMDB_API_KEY,
-    DOMAIN,
     TMDB_BASE_URL,
     SeerrLlmConfigEntryData,
+)
+from .const import (
+    DOMAIN as DOMAIN,
 )
 from .llm import SeerrLlmAPI
 
