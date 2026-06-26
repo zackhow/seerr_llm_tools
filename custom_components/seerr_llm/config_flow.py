@@ -9,6 +9,7 @@ from homeassistant.const import CONF_BASE
 from homeassistant.helpers import aiohttp_client
 
 from .const import (
+    CONF_DEF_TMDB_API_KEY,
     CONF_SEERR_API_KEY,
     CONF_SEERR_URL,
     CONF_TMDB_API_KEY,
@@ -28,7 +29,7 @@ STEP_USER_DATA_SCHEMA: vol.Schema = vol.Schema(
         ): str,
         vol.Optional(
             CONF_TMDB_API_KEY,
-            description={"suggested_value": "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJiYjc1Nzc2NTc4NmFjMTQ1OWM0YjE4OWNjZGRiNzUyMCIsIm5iZiI6MTc4MTk5ODI3Mi40NTgsInN1YiI6IjZhMzcyMmMwZjkzMGQ1ZWY5NTIzYmVhZiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.ChQ_p15G7v83jj8RYAMpwt7H0jam-8qzVz02-GJh2ko"},
+            description={"suggested_value": CONF_DEF_TMDB_API_KEY},
         ): str,
     },
 )
