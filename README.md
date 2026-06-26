@@ -1,4 +1,4 @@
-# SEERR LLM Tools
+# Seerr LLM Tools
 
 Home Assistant custom integration that exposes TMDB search and Seerr request tools for LLM-powered conversations.
 
@@ -12,7 +12,7 @@ Home Assistant custom integration that exposes TMDB search and Seerr request too
 
 1. Copy `custom_components/seerr_llm` to your Home Assistant `custom_components` directory
 2. Restart Home Assistant
-3. Add integration via UI: Settings > Devices & Services > Add Integration > "TMDB LLM Tools"
+3. Add integration via UI: Settings > Devices & Services > Add Integration > "SeerrLLM Tools"
 
 ## Testing
 
