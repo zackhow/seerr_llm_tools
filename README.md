@@ -1,6 +1,6 @@
 # Seerr LLM Tools
 
-Home Assistant custom integration that exposes TMDB search and Seerr request tools for LLM-powered conversations.
+Home Assistant custom integration that exposes TMDB search and Seerr request tools for LLM voice pipelines.
 
 ## Features
 
