@@ -22,6 +22,58 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
+_SEERR_MEDIA_STATUS_AVAILABLE = 5
+_SEERR_REQUEST_STATUS_DECLINED = 3
+
+
+async def _check_seerr_media(
+    session: aiohttp.ClientSession,
+    seerr_url: str,
+    seerr_api_key: str,
+    media_type: str,
+    tmdb_id: int,
+) -> tuple[str | None, str | None]:
+    """
+    Check if media already exists in Seerr and its request status.
+
+    Returns (title, status) where status is one of:
+    - 'already_available' if media is available
+    - 'already_requested' if there's a pending/approved request
+    - None if it's safe to proceed with a new request
+    """
+    title: str | None = None
+
+    url = f"{seerr_url}/api/v1/{media_type}/{tmdb_id}"
+    headers = {
+        "X-Api-Key": seerr_api_key,
+        "Accept": "application/json",
+    }
+
+    try:
+        async with session.get(
+            url, headers=headers, timeout=aiohttp.ClientTimeout(total=10),
+        ) as resp:
+            if resp.status == 404:
+                return None, None
+            if resp.status != 200:
+                return None, None
+            data = await resp.json()
+    except aiohttp.ClientError:
+        return None, None
+
+    title = data.get("title") or data.get("name")
+    media_info = data.get("mediaInfo", {})
+
+    if media_info.get("status") == _SEERR_MEDIA_STATUS_AVAILABLE:
+        return title, "already_available"
+
+    requests = media_info.get("requests", [])
+    for req in requests:
+        if req.get("status") != _SEERR_REQUEST_STATUS_DECLINED:
+            return title, "already_requested"
+
+    return title, None
+
 
 async def _tmdb_request(
     session: aiohttp.ClientSession,
@@ -181,6 +233,7 @@ class SearchMovie(llm.Tool):
                 "overview": result.get("overview", "No overview available."),
                 "rating": round(result.get("vote_average", 0), 1) if result.get("vote_average") else "N/A",
                 "cast": cast,
+                "type": "movie",
                 "tmdb_id": result.get("id"),
             })
 
@@ -233,6 +286,7 @@ class SearchTvShow(llm.Tool):
                 "rating": round(result.get("vote_average", 0), 1) if result.get("vote_average") else "N/A",
                 "cast": cast,
                 "season_count": season_count or "Unknown",
+                "type": "tvshow",
                 "tmdb_id": result.get("id"),
             })
 
@@ -258,16 +312,34 @@ class RequestMovie(llm.Tool):
     ) -> JsonObjectType:
         config = _get_runtime_data(hass)
         tmdb_id = tool_input.tool_args["tmdb_id"]
-
-        title: str | None = None
-        try:
-            session = aiohttp_client.async_get_clientsession(hass)
-            movie_data = await _get_movie_title(session, config.tmdb_api_key, tmdb_id)
-            title = movie_data.get("title", f"Movie (TMDB ID: {tmdb_id})")
-        except TmdbApiError:
-            title = f"Movie (TMDB ID: {tmdb_id})"
-
         session = aiohttp_client.async_get_clientsession(hass)
+
+        seerr_title, existing_status = await _check_seerr_media(
+            session, config.seerr_url, config.seerr_api_key, "movie", tmdb_id,
+        )
+
+        if existing_status == "already_available":
+            return {
+                "status": "already_available",
+                "message": f"'{seerr_title}' is already available.",
+                "tmdb_id": tmdb_id,
+            }
+
+        if existing_status == "already_requested":
+            return {
+                "status": "already_requested",
+                "message": f"'{seerr_title}' has already been requested.",
+                "tmdb_id": tmdb_id,
+            }
+
+        title: str | None = seerr_title
+        if title is None:
+            try:
+                movie_data = await _get_movie_title(session, config.tmdb_api_key, tmdb_id)
+                title = movie_data.get("title", f"Movie (TMDB ID: {tmdb_id})")
+            except TmdbApiError:
+                title = f"Movie (TMDB ID: {tmdb_id})"
+
         url = f"{config.seerr_url}/api/v1/request"
         headers = {
             "X-Api-Key": config.seerr_api_key,
@@ -317,16 +389,34 @@ class RequestTvShow(llm.Tool):
         config = _get_runtime_data(hass)
         tmdb_id = tool_input.tool_args["tmdb_id"]
         seasons = tool_input.tool_args.get("seasons", "all")
-
-        title: str | None = None
-        try:
-            session = aiohttp_client.async_get_clientsession(hass)
-            tv_data = await _get_tv_show_title(session, config.tmdb_api_key, tmdb_id)
-            title = tv_data.get("name", f"TV Show (TMDB ID: {tmdb_id})")
-        except TmdbApiError:
-            title = f"TV Show (TMDB ID: {tmdb_id})"
-
         session = aiohttp_client.async_get_clientsession(hass)
+
+        seerr_title, existing_status = await _check_seerr_media(
+            session, config.seerr_url, config.seerr_api_key, "tv", tmdb_id,
+        )
+
+        if existing_status == "already_available":
+            return {
+                "status": "already_available",
+                "message": f"'{seerr_title}' is already available.",
+                "tmdb_id": tmdb_id,
+            }
+
+        if existing_status == "already_requested":
+            return {
+                "status": "already_requested",
+                "message": f"'{seerr_title}' has already been requested.",
+                "tmdb_id": tmdb_id,
+            }
+
+        title: str | None = seerr_title
+        if title is None:
+            try:
+                tv_data = await _get_tv_show_title(session, config.tmdb_api_key, tmdb_id)
+                title = tv_data.get("name", f"TV Show (TMDB ID: {tmdb_id})")
+            except TmdbApiError:
+                title = f"TV Show (TMDB ID: {tmdb_id})"
+
         url = f"{config.seerr_url}/api/v1/request"
         headers = {
             "X-Api-Key": config.seerr_api_key,
@@ -382,7 +472,10 @@ class SeerrLlmAPI(llm.API):
                 "request, such as release year or a cast member. "
                 "For movies, use RequestMovie with the tmdb_id from the search result. "
                 "For TV shows, use RequestTvShow with the tmdb_id. By default, request all seasons "
-                "unless the user specifies particular seasons."
+                "unless the user specifies particular seasons. "
+                "RequestMovie and RequestTvShow may return status 'already_available' if the media "
+                "is already in the library, or 'already_requested' if it has been requested before. "
+                "Handle these gracefully by informing the user of the current status."
             ),
             llm_context=llm_context,
             tools=[

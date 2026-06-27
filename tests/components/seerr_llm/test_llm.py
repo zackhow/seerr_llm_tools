@@ -30,8 +30,16 @@ from custom_components.seerr_llm.llm import (
 )
 
 from .conftest import (
+    _mock_seerr_movie_available,
+    _mock_seerr_movie_declined,
+    _mock_seerr_movie_not_found,
+    _mock_seerr_movie_requested,
     _mock_seerr_request,
+    _mock_seerr_tv_available,
+    _mock_seerr_tv_declined,
+    _mock_seerr_tv_not_found,
     _mock_seerr_tv_request,
+    _mock_seerr_tv_requested,
     _mock_tmdb_movie_details,
     _mock_tmdb_movies_with_cast_all,
     _mock_tmdb_popular,
@@ -563,6 +571,7 @@ async def test_request_movie_tool_success(
     mock_config_entry: MockConfigEntry,
 ) -> None:
     """Test RequestMovie tool creates a Seerr request."""
+    _mock_seerr_movie_not_found(aioclient_mock)
     _mock_tmdb_movie_details(aioclient_mock)
     _mock_seerr_request(aioclient_mock)
 
@@ -588,6 +597,7 @@ async def test_request_movie_tool_seerr_error(
     mock_config_entry: MockConfigEntry,
 ) -> None:
     """Test RequestMovie tool returns error dict on Seerr API failure."""
+    _mock_seerr_movie_not_found(aioclient_mock)
     _mock_tmdb_movie_details(aioclient_mock)
     aioclient_mock.post(
         "http://localhost:5055/api/v1/request",
@@ -615,6 +625,10 @@ async def test_request_movie_tool_fallback_title(
     mock_config_entry: MockConfigEntry,
 ) -> None:
     """Test RequestMovie uses fallback title when TMDB lookup fails."""
+    aioclient_mock.get(
+        "http://localhost:5055/api/v1/movie/99999",
+        status=404,
+    )
     aioclient_mock.get(
         f"{TMDB_BASE_URL}/movie/99999",
         status=404,
@@ -807,6 +821,7 @@ async def test_request_movie_tool_connection_error(
     """Test RequestMovie returns error dict on Seerr connection failure."""
     import aiohttp
 
+    _mock_seerr_movie_not_found(aioclient_mock)
     _mock_tmdb_movie_details(aioclient_mock)
     aioclient_mock.post(
         "http://localhost:5055/api/v1/request",
@@ -834,6 +849,7 @@ async def test_request_tv_show_tool_success(
     mock_config_entry: MockConfigEntry,
 ) -> None:
     """Test RequestTvShow tool creates a Seerr request for all seasons."""
+    _mock_seerr_tv_not_found(aioclient_mock)
     _mock_tmdb_tv_details(aioclient_mock)
     _mock_seerr_tv_request(aioclient_mock)
 
@@ -859,6 +875,7 @@ async def test_request_tv_show_tool_specific_seasons(
     mock_config_entry: MockConfigEntry,
 ) -> None:
     """Test RequestTvShow tool creates a Seerr request for specific seasons."""
+    _mock_seerr_tv_not_found(aioclient_mock)
     _mock_tmdb_tv_details(aioclient_mock)
     _mock_seerr_tv_request(aioclient_mock)
 
@@ -887,6 +904,7 @@ async def test_request_tv_show_tool_seerr_error(
     mock_config_entry: MockConfigEntry,
 ) -> None:
     """Test RequestTvShow tool returns error dict on Seerr API failure."""
+    _mock_seerr_tv_not_found(aioclient_mock)
     _mock_tmdb_tv_details(aioclient_mock)
     aioclient_mock.post(
         "http://localhost:5055/api/v1/request",
@@ -914,6 +932,10 @@ async def test_request_tv_show_tool_fallback_title(
     mock_config_entry: MockConfigEntry,
 ) -> None:
     """Test RequestTvShow uses fallback title when TMDB lookup fails."""
+    aioclient_mock.get(
+        "http://localhost:5055/api/v1/tv/99999",
+        status=404,
+    )
     aioclient_mock.get(
         f"{TMDB_BASE_URL}/tv/99999",
         status=404,
@@ -947,6 +969,7 @@ async def test_request_tv_show_tool_connection_error(
     """Test RequestTvShow returns error dict on Seerr connection failure."""
     import aiohttp
 
+    _mock_seerr_tv_not_found(aioclient_mock)
     _mock_tmdb_tv_details(aioclient_mock)
     aioclient_mock.post(
         "http://localhost:5055/api/v1/request",
@@ -966,3 +989,271 @@ async def test_request_tv_show_tool_connection_error(
 
     assert "error" in result
     assert "Seerr" in result["error"]
+
+
+# -- RequestMovie: existing request checks --
+
+async def test_request_movie_already_available(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test RequestMovie returns already_available when media is in library."""
+    _mock_seerr_movie_available(aioclient_mock)
+
+    with patch(
+        "homeassistant.config_entries.ConfigEntries.async_entries",
+        return_value=[mock_config_entry],
+    ):
+        tool = RequestMovie()
+        result = await tool.async_call(
+            hass,
+            hass_llm.ToolInput(tool_name="RequestMovie", tool_args={"tmdb_id": 12345}),
+            hass_llm.LLMContext(platform="conversation", context=None, language="en", assistant=None, device_id=None),
+        )
+
+    assert result["status"] == "already_available"
+    assert "Test Movie" in result["message"]
+    assert "already available" in result["message"]
+    assert result["tmdb_id"] == 12345
+
+
+async def test_request_movie_already_requested(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test RequestMovie returns already_requested when pending request exists."""
+    _mock_seerr_movie_requested(aioclient_mock)
+
+    with patch(
+        "homeassistant.config_entries.ConfigEntries.async_entries",
+        return_value=[mock_config_entry],
+    ):
+        tool = RequestMovie()
+        result = await tool.async_call(
+            hass,
+            hass_llm.ToolInput(tool_name="RequestMovie", tool_args={"tmdb_id": 12345}),
+            hass_llm.LLMContext(platform="conversation", context=None, language="en", assistant=None, device_id=None),
+        )
+
+    assert result["status"] == "already_requested"
+    assert "Test Movie" in result["message"]
+    assert "already been requested" in result["message"]
+    assert result["tmdb_id"] == 12345
+
+
+async def test_request_movie_declined_allows_rerequest(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test RequestMovie proceeds when only declined requests exist."""
+    _mock_seerr_movie_declined(aioclient_mock)
+    _mock_seerr_request(aioclient_mock)
+
+    with patch(
+        "homeassistant.config_entries.ConfigEntries.async_entries",
+        return_value=[mock_config_entry],
+    ):
+        tool = RequestMovie()
+        result = await tool.async_call(
+            hass,
+            hass_llm.ToolInput(tool_name="RequestMovie", tool_args={"tmdb_id": 12345}),
+            hass_llm.LLMContext(platform="conversation", context=None, language="en", assistant=None, device_id=None),
+        )
+
+    assert result["status"] == "success"
+    assert "Request created" in result["message"]
+    assert result["tmdb_id"] == 12345
+
+
+async def test_request_movie_seerr_media_not_found(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test RequestMovie falls back to TMDB when Seerr media not found."""
+    _mock_seerr_movie_not_found(aioclient_mock)
+    _mock_tmdb_movie_details(aioclient_mock)
+    _mock_seerr_request(aioclient_mock)
+
+    with patch(
+        "homeassistant.config_entries.ConfigEntries.async_entries",
+        return_value=[mock_config_entry],
+    ):
+        tool = RequestMovie()
+        result = await tool.async_call(
+            hass,
+            hass_llm.ToolInput(tool_name="RequestMovie", tool_args={"tmdb_id": 12345}),
+            hass_llm.LLMContext(platform="conversation", context=None, language="en", assistant=None, device_id=None),
+        )
+
+    assert result["status"] == "success"
+    assert "Test Movie" in result["message"]
+    assert result["tmdb_id"] == 12345
+
+
+async def test_request_movie_seerr_connection_error(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test RequestMovie falls back to TMDB on Seerr connection error."""
+    import aiohttp
+
+    aioclient_mock.get(
+        "http://localhost:5055/api/v1/movie/12345",
+        exc=aiohttp.ClientError,
+    )
+    _mock_tmdb_movie_details(aioclient_mock)
+    _mock_seerr_request(aioclient_mock)
+
+    with patch(
+        "homeassistant.config_entries.ConfigEntries.async_entries",
+        return_value=[mock_config_entry],
+    ):
+        tool = RequestMovie()
+        result = await tool.async_call(
+            hass,
+            hass_llm.ToolInput(tool_name="RequestMovie", tool_args={"tmdb_id": 12345}),
+            hass_llm.LLMContext(platform="conversation", context=None, language="en", assistant=None, device_id=None),
+        )
+
+    assert result["status"] == "success"
+    assert "Test Movie" in result["message"]
+    assert result["tmdb_id"] == 12345
+
+
+# -- RequestTvShow: existing request checks --
+
+async def test_request_tv_show_already_available(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test RequestTvShow returns already_available when media is in library."""
+    _mock_seerr_tv_available(aioclient_mock)
+
+    with patch(
+        "homeassistant.config_entries.ConfigEntries.async_entries",
+        return_value=[mock_config_entry],
+    ):
+        tool = RequestTvShow()
+        result = await tool.async_call(
+            hass,
+            hass_llm.ToolInput(tool_name="RequestTvShow", tool_args={"tmdb_id": 67890}),
+            hass_llm.LLMContext(platform="conversation", context=None, language="en", assistant=None, device_id=None),
+        )
+
+    assert result["status"] == "already_available"
+    assert "Test TV Show" in result["message"]
+    assert "already available" in result["message"]
+    assert result["tmdb_id"] == 67890
+
+
+async def test_request_tv_show_already_requested(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test RequestTvShow returns already_requested when pending request exists."""
+    _mock_seerr_tv_requested(aioclient_mock)
+
+    with patch(
+        "homeassistant.config_entries.ConfigEntries.async_entries",
+        return_value=[mock_config_entry],
+    ):
+        tool = RequestTvShow()
+        result = await tool.async_call(
+            hass,
+            hass_llm.ToolInput(tool_name="RequestTvShow", tool_args={"tmdb_id": 67890}),
+            hass_llm.LLMContext(platform="conversation", context=None, language="en", assistant=None, device_id=None),
+        )
+
+    assert result["status"] == "already_requested"
+    assert "Test TV Show" in result["message"]
+    assert "already been requested" in result["message"]
+    assert result["tmdb_id"] == 67890
+
+
+async def test_request_tv_show_declined_allows_rerequest(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test RequestTvShow proceeds when only declined requests exist."""
+    _mock_seerr_tv_declined(aioclient_mock)
+    _mock_seerr_tv_request(aioclient_mock)
+
+    with patch(
+        "homeassistant.config_entries.ConfigEntries.async_entries",
+        return_value=[mock_config_entry],
+    ):
+        tool = RequestTvShow()
+        result = await tool.async_call(
+            hass,
+            hass_llm.ToolInput(tool_name="RequestTvShow", tool_args={"tmdb_id": 67890}),
+            hass_llm.LLMContext(platform="conversation", context=None, language="en", assistant=None, device_id=None),
+        )
+
+    assert result["status"] == "success"
+    assert "Request created" in result["message"]
+    assert result["tmdb_id"] == 67890
+
+
+async def test_request_tv_show_seerr_media_not_found(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test RequestTvShow falls back to TMDB when Seerr media not found."""
+    _mock_seerr_tv_not_found(aioclient_mock)
+    _mock_tmdb_tv_details(aioclient_mock)
+    _mock_seerr_tv_request(aioclient_mock)
+
+    with patch(
+        "homeassistant.config_entries.ConfigEntries.async_entries",
+        return_value=[mock_config_entry],
+    ):
+        tool = RequestTvShow()
+        result = await tool.async_call(
+            hass,
+            hass_llm.ToolInput(tool_name="RequestTvShow", tool_args={"tmdb_id": 67890}),
+            hass_llm.LLMContext(platform="conversation", context=None, language="en", assistant=None, device_id=None),
+        )
+
+    assert result["status"] == "success"
+    assert "Test TV Show" in result["message"]
+    assert result["tmdb_id"] == 67890
+
+
+async def test_request_tv_show_seerr_connection_error(
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test RequestTvShow falls back to TMDB on Seerr connection error."""
+    import aiohttp
+
+    aioclient_mock.get(
+        "http://localhost:5055/api/v1/tv/67890",
+        exc=aiohttp.ClientError,
+    )
+    _mock_tmdb_tv_details(aioclient_mock)
+    _mock_seerr_tv_request(aioclient_mock)
+
+    with patch(
+        "homeassistant.config_entries.ConfigEntries.async_entries",
+        return_value=[mock_config_entry],
+    ):
+        tool = RequestTvShow()
+        result = await tool.async_call(
+            hass,
+            hass_llm.ToolInput(tool_name="RequestTvShow", tool_args={"tmdb_id": 67890}),
+            hass_llm.LLMContext(platform="conversation", context=None, language="en", assistant=None, device_id=None),
+        )
+
+    assert result["status"] == "success"
+    assert "Test TV Show" in result["message"]
+    assert result["tmdb_id"] == 67890
