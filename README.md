@@ -5,7 +5,7 @@ Home Assistant custom integration that exposes TMDB search and Seerr request too
 ## Features
 
 - Search for movies and TV shows via TMDB
-- Request media through Seerr(movie only for atm)
+- Request media through Seerr
 
 ## Installation
 ### Install via HACS (recommended)
