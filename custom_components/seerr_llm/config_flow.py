@@ -17,7 +17,6 @@ from .const import (
     CONF_SEERR_URL,
     CONF_TMDB_API_KEY,
     DOMAIN,
-    TMDB_BASE_URL,
 )
 
 STEP_USER_DATA_SCHEMA: vol.Schema = vol.Schema(
@@ -30,27 +29,8 @@ STEP_USER_DATA_SCHEMA: vol.Schema = vol.Schema(
             CONF_SEERR_API_KEY,
             description={"suggested_value": ""},
         ): str,
-        vol.Optional(
-            CONF_TMDB_API_KEY,
-            description={"suggested_value": CONF_DEF_TMDB_API_KEY},
-        ): str,
     },
 )
-
-
-async def _validate_tmdb_api_key(session: aiohttp.ClientSession, api_key: str) -> None:
-    """Validate TMDB API key by making a test request."""
-    import aiohttp  # noqa: PLC0415
-
-    url = f"{TMDB_BASE_URL}/movie/popular"
-    headers = {"Authorization": f"Bearer {api_key}"}
-    async with session.get(
-        url, headers=headers, params={"language": "en-US"}, timeout=aiohttp.ClientTimeout(total=10),
-    ) as resp:
-        if resp.status == 401:
-            raise ValueError("invalid_tmdb_key")
-        if resp.status != 200:
-            raise ValueError("tmdb_unavailable")
 
 
 async def _validate_seerr_connection(
@@ -88,7 +68,6 @@ class SeerrLlmConfigFlow(ConfigFlow, domain=DOMAIN):
                 self._abort_if_unique_id_configured()
 
                 session = aiohttp_client.async_get_clientsession(self.hass)
-                await _validate_tmdb_api_key(session, user_input[CONF_TMDB_API_KEY])
                 await _validate_seerr_connection(
                     session, user_input[CONF_SEERR_URL], user_input[CONF_SEERR_API_KEY],
                 )
@@ -101,7 +80,10 @@ class SeerrLlmConfigFlow(ConfigFlow, domain=DOMAIN):
             if not errors:
                 return self.async_create_entry(
                     title="Seerr LLM Tools",
-                    data=user_input,
+                    data={
+                        CONF_TMDB_API_KEY: CONF_DEF_TMDB_API_KEY,
+                        **user_input,
+                    },
                 )
 
         return self.async_show_form(
@@ -122,7 +104,6 @@ class SeerrLlmConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             try:
                 session = aiohttp_client.async_get_clientsession(self.hass)
-                await _validate_tmdb_api_key(session, user_input[CONF_TMDB_API_KEY])
                 await _validate_seerr_connection(
                     session, user_input[CONF_SEERR_URL], user_input[CONF_SEERR_API_KEY],
                 )
@@ -135,7 +116,10 @@ class SeerrLlmConfigFlow(ConfigFlow, domain=DOMAIN):
             if not errors:
                 return self.async_update_reload_and_abort(
                     entry,
-                    data_updates=user_input,
+                    data_updates={
+                        CONF_TMDB_API_KEY: CONF_DEF_TMDB_API_KEY,
+                        **user_input,
+                    },
                 )
 
         return self.async_show_form(

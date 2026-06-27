@@ -25,6 +25,11 @@ VALID_CONFIG: dict[str, Any] = {
     CONF_SEERR_API_KEY: "test-seerr-key",
 }
 
+VALID_CONFIG_FLOW_INPUT: dict[str, Any] = {
+    CONF_SEERR_URL: "http://localhost:5055",
+    CONF_SEERR_API_KEY: "test-seerr-key",
+}
+
 
 @pytest.fixture
 def mock_config_entry(hass: HomeAssistant) -> MockConfigEntry:
