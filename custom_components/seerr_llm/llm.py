@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
+import aiohttp
 import voluptuous as vol
 from homeassistant.helpers import aiohttp_client, llm
 
@@ -15,19 +16,11 @@ from .const import (
 from .exceptions import NoResultsError, TmdbApiError
 
 if TYPE_CHECKING:
-    import aiohttp
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant
     from homeassistant.util.json import JsonObjectType
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def _get_timeout() -> object:
-    """Get aiohttp ClientTimeout without top-level import."""
-    import aiohttp  # noqa: PLC0415
-
-    return aiohttp.ClientTimeout(total=10)
 
 
 async def _tmdb_request(
@@ -41,7 +34,7 @@ async def _tmdb_request(
         "Authorization": f"Bearer {tmdb_api_key}",
     }
     async with session.get(
-        url, headers=headers, params=params, timeout=_get_timeout(),
+        url, headers=headers, params=params, timeout=aiohttp.ClientTimeout(total=10),
     ) as resp:
         if resp.status != 200:
             body = await resp.text()
@@ -286,11 +279,9 @@ class RequestMovie(llm.Tool):
             "mediaId": tmdb_id,
         }
 
-        import aiohttp  # noqa: PLC0415
-
         try:
             async with session.post(
-                url, headers=headers, json=payload, timeout=_get_timeout(),
+                url, headers=headers, json=payload, timeout=aiohttp.ClientTimeout(total=10),
             ) as resp:
                 if resp.status in (200, 201):
                     return {
@@ -348,11 +339,9 @@ class RequestTvShow(llm.Tool):
             "seasons": seasons,
         }
 
-        import aiohttp  # noqa: PLC0415
-
         try:
             async with session.post(
-                url, headers=headers, json=payload, timeout=_get_timeout(),
+                url, headers=headers, json=payload, timeout=aiohttp.ClientTimeout(total=10),
             ) as resp:
                 if resp.status in (200, 201):
                     return {
