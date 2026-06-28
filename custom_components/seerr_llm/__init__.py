@@ -15,9 +15,6 @@ from .const import (
     TMDB_BASE_URL,
     SeerrLlmConfigEntryData,
 )
-from .const import (
-    DOMAIN as DOMAIN,
-)
 from .llm import SeerrLlmAPI
 
 if TYPE_CHECKING:

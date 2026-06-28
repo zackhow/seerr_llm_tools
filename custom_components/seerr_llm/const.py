@@ -12,6 +12,9 @@ CONF_SEERR_API_KEY = "seerr_api_key"
 
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 
+SEERR_MEDIA_STATUS_AVAILABLE = 5
+SEERR_REQUEST_STATUS_DECLINED = 3
+
 
 @dataclass(frozen=True, kw_only=True)
 class SeerrLlmConfigEntryData:

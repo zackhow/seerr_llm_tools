@@ -20,7 +20,7 @@ from custom_components.seerr_llm.const import (
     DOMAIN,
 )
 
-from .conftest import VALID_CONFIG, VALID_CONFIG_FLOW_INPUT, _mock_seerr_auth
+from .conftest import VALID_CONFIG, VALID_CONFIG_FLOW_INPUT, mock_seerr_auth
 
 
 @pytest.mark.parametrize(
@@ -36,7 +36,7 @@ async def test_user_flow_success(
     input_data: dict[str, Any],
 ) -> None:
     """Test successful user config flow."""
-    _mock_seerr_auth(aioclient_mock)
+    mock_seerr_auth(aioclient_mock)
 
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
@@ -136,7 +136,7 @@ async def test_user_flow_already_configured(
     enable_custom_integrations: None,
 ) -> None:
     """Test user flow aborts when integration is already configured."""
-    _mock_seerr_auth(aioclient_mock)
+    mock_seerr_auth(aioclient_mock)
 
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -163,7 +163,7 @@ async def test_reconfigure_flow_success(
     enable_custom_integrations: None,
 ) -> None:
     """Test successful reconfigure flow."""
-    _mock_seerr_auth(aioclient_mock)
+    mock_seerr_auth(aioclient_mock)
 
     entry = MockConfigEntry(
         domain=DOMAIN,

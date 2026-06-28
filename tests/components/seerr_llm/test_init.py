@@ -19,7 +19,7 @@ from custom_components.seerr_llm.const import (
     TMDB_BASE_URL,
 )
 
-from .conftest import VALID_CONFIG, _mock_tmdb_popular
+from .conftest import VALID_CONFIG, mock_tmdb_popular
 
 
 async def test_setup_unload_entry(
@@ -28,7 +28,7 @@ async def test_setup_unload_entry(
     enable_custom_integrations: None,
 ) -> None:
     """Test successful setup and unload of config entry."""
-    _mock_tmdb_popular(aioclient_mock)
+    mock_tmdb_popular(aioclient_mock)
 
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -110,7 +110,7 @@ async def test_setup_entry_registers_llm_api(
     enable_custom_integrations: None,
 ) -> None:
     """Test that setup registers the LLM API."""
-    _mock_tmdb_popular(aioclient_mock)
+    mock_tmdb_popular(aioclient_mock)
 
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -138,7 +138,7 @@ async def test_setup_entry_runtime_data_set(
     enable_custom_integrations: None,
 ) -> None:
     """Test that setup sets runtime data on the config entry."""
-    _mock_tmdb_popular(aioclient_mock)
+    mock_tmdb_popular(aioclient_mock)
 
     entry = MockConfigEntry(
         domain=DOMAIN,

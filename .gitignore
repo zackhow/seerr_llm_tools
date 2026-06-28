@@ -31,6 +31,4 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# Custom components cache
-custom_components/**/__pycache__/
-custom_components/**/*.pyc
+

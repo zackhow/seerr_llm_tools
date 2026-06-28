@@ -14,15 +14,6 @@ class TmdbApiError(SeerrLlmError):
         self.message = message
 
 
-class SeerrApiError(SeerrLlmError):
-    """Exception raised when Seerr API request fails."""
-
-    def __init__(self, status: int, message: str) -> None:
-        super().__init__(f"Seerr API error {status}: {message}")
-        self.status = status
-        self.message = message
-
-
 class NoResultsError(SeerrLlmError):
     """Exception raised when no results are found."""
 
